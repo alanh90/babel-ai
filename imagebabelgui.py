@@ -180,31 +180,54 @@ class ImageBabelGUI:
                 self.button_auto.config(text="Auto")
 
     def new_settings(self):
-        # Define default values
-        default_width = 10
-        default_height = 10
-        default_color_depth = 2
+        # Create a new top-level window for the custom dialog
+        dialog = tk.Toplevel(self.master)  # use self.master as the parent of the dialog
+        dialog.title("Image Settings")
 
-        # Get all settings in one dialog, separated by commas (e.g., "10,10,2")
-        settings = simpledialog.askstring("Image Settings",
-                                          "Enter the image width, height, and color depth separated by commas (e.g., '10,10,2'):")
+        # Entry for image width
+        tk.Label(dialog, text="Enter the image width:").grid(row=0, column=0)
+        width_entry = tk.Entry(dialog)
+        width_entry.insert(0, "5")  # Default value
+        width_entry.grid(row=0, column=1)
 
-        if settings:
-            # Split the input string by commas and convert to integers
-            settings_list = [int(s.strip()) for s in settings.split(',') if s.strip().isdigit()]
+        # Entry for image height
+        tk.Label(dialog, text="Enter the image height:").grid(row=1, column=0)
+        height_entry = tk.Entry(dialog)
+        height_entry.insert(0, "5")  # Default value
+        height_entry.grid(row=1, column=1)
 
-            # Assign values based on input or use defaults if not enough values are provided
-            width = settings_list[0] if len(settings_list) > 0 else default_width
-            height = settings_list[1] if len(settings_list) > 1 else default_height
-            color_depth = settings_list[2] if len(settings_list) > 2 else default_color_depth
-        else:
-            # Use default values if no input was provided
-            width, height, color_depth = default_width, default_height, default_color_depth
+        # Entry for color depth
+        tk.Label(dialog, text="Enter the color depth:").grid(row=2, column=0)
+        color_depth_entry = tk.Entry(dialog)
+        color_depth_entry.insert(0, "2")  # Default value
+        color_depth_entry.grid(row=2, column=1)
 
-        # Set the new parameters
-        self.generator.set_parameters(width, height, color_depth)
-        self.slider.config(to=self.generator.get_total_images() - 1)
-        self.update_image(0)
+        # Function to update settings on confirmation
+        def confirm_settings():
+            width = int(width_entry.get()) if width_entry.get().isdigit() else 10
+            height = int(height_entry.get()) if height_entry.get().isdigit() else 10
+            color_depth = int(color_depth_entry.get()) if color_depth_entry.get().isdigit() else 2
+
+            self.generator.set_parameters(width, height, color_depth)
+            self.slider.config(to=self.generator.get_total_images() - 1)
+            self.update_image(0)
+            dialog.destroy()
+
+        # Confirm button
+        confirm_button = tk.Button(dialog, text="Confirm", command=confirm_settings)
+        confirm_button.grid(row=3, column=0, columnspan=2)
+
+        # Centering the dialog on the screen
+        dialog.update_idletasks()  # Update the dialog's internal layout
+        width = dialog.winfo_width()
+        height = dialog.winfo_height()
+        x = (dialog.winfo_screenwidth() // 2) - (width // 2)
+        y = (dialog.winfo_screenheight() // 2) - (height // 2)
+        dialog.geometry(f'{width}x{height}+{x}+{y}')
+
+        dialog.transient(self.master)  # Make the dialog transient to the main window
+        dialog.grab_set()  # Make the dialog modal
+        self.master.wait_window(dialog)  # Wait for the dialog to be destroyed before moving on
 
     def update_step_size(self, event):
         try:
