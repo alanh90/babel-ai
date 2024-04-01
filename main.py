@@ -1,5 +1,5 @@
 from PIL import Image
-from ImageBabelGenerator import ImageBabelGenerator
+from imagebabelgen import ImageBabelGenerator
 
 # Create an instance of the ImageBabelGenerator
 generator = ImageBabelGenerator(width=4, height=4, color_depth=2)
