@@ -1,5 +1,7 @@
 # Babel AI - All Possible Image Generation and Analysis
 
+[![Demo Video](https://img.youtube.com/vi/m8VoOoMR46E/0.jpg)](https://www.youtube.com/watch?v=m8VoOoMR46E)
+
 ## Introduction
 Babel AI is a Python-based project that delves into the fascinating realm of generating all conceivable images within specific parameters such as pixel size, color range, and options for black and white or color. It features a user-friendly graphical interface to seamlessly visualize the generated images. Additionally, it empowers users to import existing images to ascertain their unique position within the comprehensive library of all potential images.
 
@@ -10,11 +12,6 @@ Babel AI is a Python-based project that delves into the fascinating realm of gen
 - Exclude images resembling random noise beyond a set threshold to ensure quality and relevance.
 - Filter out mirrored images both vertically and horizontally to maintain image uniqueness.
 - Employ advanced mathematical techniques to analyze and contrast images, unveiling underlying patterns and similarities.
-
-## Older Version Demo
-
-Watch the old demo video here: 
-[![Demo Video](https://img.youtube.com/vi/m8VoOoMR46E/0.jpg)](https://www.youtube.com/watch?v=m8VoOoMR46E)
 
 ## Installation
 
