@@ -11,6 +11,10 @@ Babel AI is a Python-based project that delves into the fascinating realm of gen
 - Filter out mirrored images both vertically and horizontally to maintain image uniqueness.
 - Employ advanced mathematical techniques to analyze and contrast images, unveiling underlying patterns and similarities.
 
+## Older Version Demo
+
+Watch the old demo video here: [![Demo Video](https://img.youtube.com/vi/m8VoOoMR46E/0.jpg)](https://www.youtube.com/watch?v=m8VoOoMR46E)
+
 ## Installation
 
 ### Clone the repository
