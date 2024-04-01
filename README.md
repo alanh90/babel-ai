@@ -13,7 +13,8 @@ Babel AI is a Python-based project that delves into the fascinating realm of gen
 
 ## Older Version Demo
 
-Watch the old demo video here: [![Demo Video](https://img.youtube.com/vi/m8VoOoMR46E/0.jpg)](https://www.youtube.com/watch?v=m8VoOoMR46E)
+Watch the old demo video here: 
+[![Demo Video](https://img.youtube.com/vi/m8VoOoMR46E/0.jpg)](https://www.youtube.com/watch?v=m8VoOoMR46E)
 
 ## Installation
 
