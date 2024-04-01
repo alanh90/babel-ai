@@ -114,32 +114,42 @@ class ImageBabelGUI:
         self.update_image(self.slider.get())
 
     def update_image(self, index):
-        image = self.generator.generate_image(int(index))
+        try:
+            # Validate the index and convert to integer
+            index = float(index)
+            if index == float('inf') or index >= self.generator.total_images:
+                raise ValueError("Index out of range or infinity.")
+            index = int(index)
+        except ValueError as e:
+            print(f"Error: {e}")
+            return  # Optionally, reset to a valid index or handle the error as needed
+
+        image = self.generator.generate_image(index)
 
         # Calculate the aspect ratio of the image
         width, height = image.size
         aspect_ratio = width / height
 
-        # Calculate the dimensions to fit the canvas while maintaining the aspect ratio
+        # Get canvas dimensions
         canvas_width = self.canvas.winfo_width()
         canvas_height = self.canvas.winfo_height()
 
+        # Calculate scaled dimensions to maintain aspect ratio
         if aspect_ratio > 1:
-            # Image is wider than tall
             scaled_width = canvas_width
             scaled_height = int(scaled_width / aspect_ratio)
         else:
-            # Image is taller than wide or square
             scaled_height = canvas_height
             scaled_width = int(scaled_height * aspect_ratio)
 
-        # Resize the image to fit the canvas using the selected resampling filter
+        # Resize the image to fit the canvas, maintaining aspect ratio
         image = image.resize((scaled_width, scaled_height), self.resampling_filter)
 
+        # Display the image
         photo = ImageTk.PhotoImage(image)
         self.canvas.delete("all")
         self.canvas.create_image(canvas_width // 2, canvas_height // 2, anchor=tk.CENTER, image=photo)
-        self.canvas.image = photo
+        self.canvas.image = photo  # Keep a reference to avoid garbage collection
 
     def prev_image(self):
         current_index = self.slider.get()
