@@ -19,72 +19,88 @@ class ImageBabelGUI:
         self.canvas.pack()
 
         self.slider = tk.Scale(master, from_=0, to=self.generator.get_total_images() - 1, orient=tk.HORIZONTAL,
-                               command=self.update_image)
+                               command=self.update_image, length=400)
         self.slider.pack()
 
-        self.button_frame = tk.Frame(master)
-        self.button_frame.pack()
+        # Navigation buttons
+        navigation_frame = tk.Frame(master)
+        navigation_frame.pack()
 
-        self.button_prev = tk.Button(self.button_frame, text="Previous", command=self.prev_image)
+        self.button_prev = tk.Button(navigation_frame, text="Previous", command=self.prev_image)
         self.button_prev.pack(side=tk.LEFT)
 
-        self.button_next = tk.Button(self.button_frame, text="Next", command=self.next_image)
+        self.button_next = tk.Button(navigation_frame, text="Next", command=self.next_image)
         self.button_next.pack(side=tk.LEFT)
 
-        self.button_step_prev = tk.Button(self.button_frame, text="Step Prev", command=self.step_prev)
+        self.button_step_prev = tk.Button(navigation_frame, text="Step Prev", command=self.step_prev)
         self.button_step_prev.pack(side=tk.LEFT)
 
-        self.button_step_next = tk.Button(self.button_frame, text="Step Next", command=self.step_next)
+        self.button_step_next = tk.Button(navigation_frame, text="Step Next", command=self.step_next)
         self.button_step_next.pack(side=tk.LEFT)
 
-        self.button_auto = tk.Button(self.button_frame, text="Auto", command=self.toggle_auto)
-        self.button_auto.pack(side=tk.LEFT)
-
-        self.button_import = tk.Button(self.button_frame, text="Import Image", command=self.import_image)
-        self.button_import.pack(side=tk.LEFT)
-
-        self.button_save = tk.Button(self.button_frame, text="Save Image", command=self.save_image)
-        self.button_save.pack(side=tk.LEFT)
-
-        self.label_width = tk.Label(master, text="Width:")
-        self.label_width.pack()
-        self.entry_width = tk.Entry(master)
-        self.entry_width.pack()
-
-        self.label_height = tk.Label(master, text="Height:")
-        self.label_height.pack()
-        self.entry_height = tk.Entry(master)
-        self.entry_height.pack()
-
-        self.label_color_depth = tk.Label(master, text="Color Depth:")
-        self.label_color_depth.pack()
-        self.entry_color_depth = tk.Entry(master)
-        self.entry_color_depth.pack()
-
-        self.button_generate = tk.Button(master, text="Generate Images", command=self.generate_images)
-        self.button_generate.pack()
-
-        self.label_step_size = tk.Label(master, text="Step Size:")
-        self.label_step_size.pack()
-        self.entry_step_size = tk.Entry(master)
-        self.entry_step_size.insert(tk.END, "1")
-        self.entry_step_size.pack()
-        self.entry_step_size.bind("<Return>", self.update_step_size)
-
-        self.button_fast_forward = tk.Button(self.button_frame, text="Fast Forward", command=self.fast_forward)
+        self.button_fast_forward = tk.Button(navigation_frame, text="Fast Forward", command=self.fast_forward)
         self.button_fast_forward.pack(side=tk.LEFT)
 
-        self.button_save_nonrandom = tk.Button(self.button_frame, text="Save Non-Random", command=self.save_nonrandom)
+        # Image generation buttons
+        generation_frame = tk.Frame(master)
+        generation_frame.pack()
+
+        self.button_auto = tk.Button(generation_frame, text="Auto", command=self.toggle_auto)
+        self.button_auto.pack(side=tk.LEFT)
+
+        self.button_save_nonrandom = tk.Button(generation_frame, text="Save Non-Random", command=self.save_nonrandom)
         self.button_save_nonrandom.pack(side=tk.LEFT)
 
-        self.label_threshold = tk.Label(master, text="Randomness Threshold:")
-        self.label_threshold.pack()
-        self.entry_threshold = tk.Entry(master)
+        self.button_import = tk.Button(generation_frame, text="Import Image", command=self.import_image)
+        self.button_import.pack(side=tk.LEFT)
+
+        self.button_save = tk.Button(generation_frame, text="Save Image", command=self.save_image)
+        self.button_save.pack(side=tk.LEFT)
+
+        # Image settings
+        settings_frame = tk.Frame(master)
+        settings_frame.pack()
+
+        self.label_width = tk.Label(settings_frame, text="Width:")
+        self.label_width.pack(side=tk.LEFT)
+        self.entry_width = tk.Entry(settings_frame)
+        self.entry_width.pack(side=tk.LEFT)
+
+        self.label_height = tk.Label(settings_frame, text="Height:")
+        self.label_height.pack(side=tk.LEFT)
+        self.entry_height = tk.Entry(settings_frame)
+        self.entry_height.pack(side=tk.LEFT)
+
+        self.label_color_depth = tk.Label(settings_frame, text="Color Depth:")
+        self.label_color_depth.pack(side=tk.LEFT)
+        self.entry_color_depth = tk.Entry(settings_frame)
+        self.entry_color_depth.pack(side=tk.LEFT)
+
+        self.button_generate = tk.Button(settings_frame, text="Generate Images", command=self.generate_images)
+        self.button_generate.pack(side=tk.LEFT)
+
+        # Additional options
+        options_frame = tk.Frame(master)
+        options_frame.pack()
+
+        self.label_step_size = tk.Label(options_frame, text="Step Size:")
+        self.label_step_size.pack(side=tk.LEFT)
+        self.entry_step_size = tk.Entry(options_frame)
+        self.entry_step_size.insert(tk.END, "1")
+        self.entry_step_size.pack(side=tk.LEFT)
+
+        self.label_threshold = tk.Label(options_frame, text="Randomness Threshold:")
+        self.label_threshold.pack(side=tk.LEFT)
+        self.entry_threshold = tk.Entry(options_frame)
         self.entry_threshold.insert(tk.END, "0.7")
-        self.entry_threshold.pack()
+        self.entry_threshold.pack(side=tk.LEFT)
+
+        self.button_toggle_filter = tk.Button(options_frame, text="Toggle Filter", command=self.toggle_filter)
+        self.button_toggle_filter.pack(side=tk.LEFT)
 
         self.auto_increment = False
         self.step_size = 1
+        self.resampling_filter = Image.LANCZOS
 
         # Display the first image
         self.update_image(0)
@@ -101,6 +117,18 @@ class ImageBabelGUI:
         if image is not None:
             self.update_image(self.generator.current_index)
             self.save_image()
+
+    def toggle_filter(self):
+        if self.resampling_filter == Image.LANCZOS:
+            self.resampling_filter = Image.NEAREST
+            self.button_toggle_filter.config(text="Filter: Nearest")
+        elif self.resampling_filter == Image.NEAREST:
+            self.resampling_filter = Image.BILINEAR
+            self.button_toggle_filter.config(text="Filter: Bilinear")
+        else:
+            self.resampling_filter = Image.LANCZOS
+            self.button_toggle_filter.config(text="Filter: Lanczos")
+        self.update_image(self.slider.get())
 
     def update_image(self, index):
         image = self.generator.generate_image(int(index))
@@ -122,8 +150,8 @@ class ImageBabelGUI:
             scaled_height = canvas_height
             scaled_width = int(scaled_height * aspect_ratio)
 
-        # Resize the image to fit the canvas
-        image = image.resize((scaled_width, scaled_height), Image.LANCZOS)
+        # Resize the image to fit the canvas using the selected resampling filter
+        image = image.resize((scaled_width, scaled_height), self.resampling_filter)
 
         photo = ImageTk.PhotoImage(image)
         self.canvas.delete("all")
