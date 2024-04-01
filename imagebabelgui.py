@@ -104,9 +104,30 @@ class ImageBabelGUI:
 
     def update_image(self, index):
         image = self.generator.generate_image(int(index))
+
+        # Calculate the aspect ratio of the image
+        width, height = image.size
+        aspect_ratio = width / height
+
+        # Calculate the dimensions to fit the canvas while maintaining the aspect ratio
+        canvas_width = self.canvas.winfo_width()
+        canvas_height = self.canvas.winfo_height()
+
+        if aspect_ratio > 1:
+            # Image is wider than tall
+            scaled_width = canvas_width
+            scaled_height = int(scaled_width / aspect_ratio)
+        else:
+            # Image is taller than wide or square
+            scaled_height = canvas_height
+            scaled_width = int(scaled_height * aspect_ratio)
+
+        # Resize the image to fit the canvas
+        image = image.resize((scaled_width, scaled_height), Image.LANCZOS)
+
         photo = ImageTk.PhotoImage(image)
         self.canvas.delete("all")
-        self.canvas.create_image(0, 0, anchor=tk.NW, image=photo)
+        self.canvas.create_image(canvas_width // 2, canvas_height // 2, anchor=tk.CENTER, image=photo)
         self.canvas.image = photo
 
     def prev_image(self):
