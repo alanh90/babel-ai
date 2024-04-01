@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import filedialog
+from tkinter import filedialog, simpledialog
 from PIL import Image, ImageTk
 import numpy as np
 from imagebabelgen import ImageBabelGenerator
@@ -11,8 +11,15 @@ class ImageBabelGUI:
         self.master = master
         master.title("Image Babel Generator")
 
-        # Create an instance of the ImageBabelGenerator
+        # Create an instance of the ImageBabelGenerator with default values
         self.generator = ImageBabelGenerator(width=4, height=4, color_depth=2)
+
+        # Create menu bar
+        self.menu_bar = tk.Menu(master)
+        self.file_menu = tk.Menu(self.menu_bar, tearoff=0)
+        self.file_menu.add_command(label="New", command=self.new_settings)
+        self.menu_bar.add_cascade(label="File", menu=self.file_menu)
+        master.config(menu=self.menu_bar)
 
         # Create GUI elements
         self.canvas = tk.Canvas(master, width=400, height=400)
@@ -20,17 +27,11 @@ class ImageBabelGUI:
 
         self.slider = tk.Scale(master, from_=0, to=self.generator.get_total_images() - 1, orient=tk.HORIZONTAL,
                                command=self.update_image, length=400)
-        self.slider.pack()
+        self.slider.pack(fill=tk.X, expand=True)
 
         # Navigation buttons
         navigation_frame = tk.Frame(master)
         navigation_frame.pack()
-
-        self.button_prev = tk.Button(navigation_frame, text="Previous", command=self.prev_image)
-        self.button_prev.pack(side=tk.LEFT)
-
-        self.button_next = tk.Button(navigation_frame, text="Next", command=self.next_image)
-        self.button_next.pack(side=tk.LEFT)
 
         self.button_step_prev = tk.Button(navigation_frame, text="Step Prev", command=self.step_prev)
         self.button_step_prev.pack(side=tk.LEFT)
@@ -57,28 +58,6 @@ class ImageBabelGUI:
         self.button_save = tk.Button(generation_frame, text="Save Image", command=self.save_image)
         self.button_save.pack(side=tk.LEFT)
 
-        # Image settings
-        settings_frame = tk.Frame(master)
-        settings_frame.pack()
-
-        self.label_width = tk.Label(settings_frame, text="Width:")
-        self.label_width.pack(side=tk.LEFT)
-        self.entry_width = tk.Entry(settings_frame)
-        self.entry_width.pack(side=tk.LEFT)
-
-        self.label_height = tk.Label(settings_frame, text="Height:")
-        self.label_height.pack(side=tk.LEFT)
-        self.entry_height = tk.Entry(settings_frame)
-        self.entry_height.pack(side=tk.LEFT)
-
-        self.label_color_depth = tk.Label(settings_frame, text="Color Depth:")
-        self.label_color_depth.pack(side=tk.LEFT)
-        self.entry_color_depth = tk.Entry(settings_frame)
-        self.entry_color_depth.pack(side=tk.LEFT)
-
-        self.button_generate = tk.Button(settings_frame, text="Generate Images", command=self.generate_images)
-        self.button_generate.pack(side=tk.LEFT)
-
         # Additional options
         options_frame = tk.Frame(master)
         options_frame.pack()
@@ -88,6 +67,7 @@ class ImageBabelGUI:
         self.entry_step_size = tk.Entry(options_frame)
         self.entry_step_size.insert(tk.END, "1")
         self.entry_step_size.pack(side=tk.LEFT)
+        self.entry_step_size.bind("<Return>", self.update_step_size)
 
         self.label_threshold = tk.Label(options_frame, text="Randomness Threshold:")
         self.label_threshold.pack(side=tk.LEFT)
@@ -104,6 +84,9 @@ class ImageBabelGUI:
 
         # Display the first image
         self.update_image(0)
+
+        # Show the settings dialog on startup
+        self.new_settings()
 
     def fast_forward(self):
         current_index = self.slider.get()
@@ -196,7 +179,17 @@ class ImageBabelGUI:
                 self.auto_increment = False
                 self.button_auto.config(text="Auto")
 
-    def update_step_size(self, *args):
+    def new_settings(self):
+        width = simpledialog.askinteger("Image Settings", "Enter the image width:", minvalue=1)
+        height = simpledialog.askinteger("Image Settings", "Enter the image height:", minvalue=1)
+        color_depth = simpledialog.askinteger("Image Settings", "Enter the color depth:", minvalue=1)
+
+        if width is not None and height is not None and color_depth is not None:
+            self.generator.set_parameters(width, height, color_depth)
+            self.slider.config(to=self.generator.get_total_images() - 1)
+            self.update_image(0)
+
+    def update_step_size(self, event):
         try:
             self.step_size = int(self.entry_step_size.get())
         except ValueError:

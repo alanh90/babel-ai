@@ -16,7 +16,7 @@ class ImageBabelGenerator:
         If no index is provided, use the current index.
         """
         if index is not None:
-            self.current_index = index
+            self.current_index = np.int64(index)
         image = self._index_to_image(self.current_index)
         self.current_index += 1  # Move to the next image for subsequent call
         return image
@@ -42,7 +42,7 @@ class ImageBabelGenerator:
         """
         pixels = np.array(image) // (255 // (self.color_depth - 1))
         digits = ''.join(str(d) for d in pixels.flatten())
-        index = int(digits, base=self.color_depth)
+        index = np.int64(digits, base=self.color_depth)
         return index
 
     def _index_to_string_id(self, index):
