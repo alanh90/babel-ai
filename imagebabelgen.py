@@ -1,6 +1,7 @@
 import sys
 
 import numpy as np
+import scipy
 from PIL import Image
 import base64
 
@@ -99,14 +100,30 @@ class ImageBabelGenerator:
     def _digits_to_index(self, digits):
         return ''.join(str(d) for d in digits)
 
-    def find_next_nonrandom_image(self, threshold=0.7):
+    def _calculate_entropy(self, image):
+        """
+        Calculate the Shannon entropy of an image, which is a measure of randomness.
+        """
+        pixels = np.array(image)
+        _, counts = np.unique(pixels, return_counts=True)
+        probabilities = counts / counts.sum()
+        entropy = scipy.stats.entropy(probabilities)
+        return entropy
+
+    def find_next_nonrandom_image(self, entropy_threshold=5.0):
+        """
+        Find the next image that has an entropy below the given threshold.
+        """
         current_index = self.current_index
-        while self._compare_indices(current_index, self._digits_to_index(str(self.total_images))) < 0:
+        while True:
             image = self._index_to_image(current_index)
-            if not self.is_random_noise(image, threshold):
+            entropy = self._calculate_entropy(image)
+            if entropy < entropy_threshold:
                 self.current_index = current_index
                 return image
             current_index = self._increment_index(current_index)
+            if current_index >= self.total_images:  # Stop if we reach the total number of images.
+                break
         return None
 
     def _compare_indices(self, index1, index2):

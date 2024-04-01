@@ -11,6 +11,8 @@ class ImageBabelGUI:
         self.master = master
         master.title("Image Babel Generator")
 
+        self.randomness_threshold = 0.7  # Default randomness threshold
+
         # Create an instance of the ImageBabelGenerator with default values
         self.generator = ImageBabelGenerator(width=4, height=4, color_depth=2)
 
@@ -75,6 +77,11 @@ class ImageBabelGUI:
         self.entry_threshold.insert(tk.END, "0.7")
         self.entry_threshold.pack(side=tk.LEFT)
 
+        # Add a button for finding the next non-random image
+        self.button_next_nonrandom = tk.Button(navigation_frame, text="Next Non-Random",
+                                               command=self.find_next_nonrandom)
+        self.button_next_nonrandom.pack(side=tk.LEFT)
+
         self.button_toggle_filter = tk.Button(options_frame, text="Toggle Filter", command=self.toggle_filter)
         self.button_toggle_filter.pack(side=tk.LEFT)
 
@@ -87,6 +94,30 @@ class ImageBabelGUI:
 
         # Show the settings dialog on startup
         self.new_settings()
+
+    def find_next_nonrandom(self):
+        """
+        Find and display the next non-random image based on the threshold.
+        """
+        threshold = float(self.entry_threshold.get())  # Retrieve the threshold from the GUI
+        try:
+            # Keep looking for the next non-random image until we find one or reach the end
+            while True:
+                # Attempt to find the next non-random image
+                image = self.generator.find_next_nonrandom_image(threshold)
+                if image:
+                    # Update the slider and image if a non-random image is found
+                    self.update_image(self.generator.current_index)
+                    break
+                else:
+                    # Increment the current index if no non-random image is found
+                    if self.generator.current_index < self.generator.get_total_images() - 1:
+                        self.generator.current_index += 1
+                    else:
+                        print("No more non-random images found.")
+                        break
+        except Exception as e:
+            print(f"Error: {e}")
 
     def fast_forward(self):
         current_index = self.slider.get()
