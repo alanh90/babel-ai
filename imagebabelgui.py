@@ -180,14 +180,31 @@ class ImageBabelGUI:
                 self.button_auto.config(text="Auto")
 
     def new_settings(self):
-        width = simpledialog.askinteger("Image Settings", "Enter the image width:", minvalue=1)
-        height = simpledialog.askinteger("Image Settings", "Enter the image height:", minvalue=1)
-        color_depth = simpledialog.askinteger("Image Settings", "Enter the color depth:", minvalue=1)
+        # Define default values
+        default_width = 10
+        default_height = 10
+        default_color_depth = 2
 
-        if width is not None and height is not None and color_depth is not None:
-            self.generator.set_parameters(width, height, color_depth)
-            self.slider.config(to=self.generator.get_total_images() - 1)
-            self.update_image(0)
+        # Get all settings in one dialog, separated by commas (e.g., "10,10,2")
+        settings = simpledialog.askstring("Image Settings",
+                                          "Enter the image width, height, and color depth separated by commas (e.g., '10,10,2'):")
+
+        if settings:
+            # Split the input string by commas and convert to integers
+            settings_list = [int(s.strip()) for s in settings.split(',') if s.strip().isdigit()]
+
+            # Assign values based on input or use defaults if not enough values are provided
+            width = settings_list[0] if len(settings_list) > 0 else default_width
+            height = settings_list[1] if len(settings_list) > 1 else default_height
+            color_depth = settings_list[2] if len(settings_list) > 2 else default_color_depth
+        else:
+            # Use default values if no input was provided
+            width, height, color_depth = default_width, default_height, default_color_depth
+
+        # Set the new parameters
+        self.generator.set_parameters(width, height, color_depth)
+        self.slider.config(to=self.generator.get_total_images() - 1)
+        self.update_image(0)
 
     def update_step_size(self, event):
         try:
