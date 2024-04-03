@@ -4,6 +4,7 @@ from PIL import Image, ImageTk
 import numpy as np
 from imagebabelgen import ImageBabelGenerator
 import os
+import threading
 
 class ImageBabelGUI:
     def __init__(self, master):
@@ -73,6 +74,9 @@ class ImageBabelGUI:
         self.auto_increment = False
         self.resampling_filter = Image.LANCZOS
 
+        self.image_generation_thread = None
+        self.stop_image_generation = False
+
         # Show the settings dialog on startup
         self.new_settings()
 
@@ -103,13 +107,19 @@ class ImageBabelGUI:
         self.canvas.image = photo
 
     def update_image_from_slider(self, slider_value):
-        slider_position = int(slider_value)
+        if self.image_generation_thread is None or not self.image_generation_thread.is_alive():
+            self.stop_image_generation = False
+            self.image_generation_thread = threading.Thread(target=self.estimate_image_from_slider, args=(int(slider_value),))
+            self.image_generation_thread.start()
+
+    def estimate_image_from_slider(self, slider_position):
         total_images = self.get_max_slider_value() + 1
         image_index = int(slider_position / total_images * self.generator.image_iterator.total_combinations)
         pixel_combination = self.generator.image_iterator.get_pixel_combination(image_index)
         image = self.generator.image_iterator._pixel_combination_to_image(pixel_combination)
         self.generator.current_image = image
-        self.update_image(image)
+        if not self.stop_image_generation:
+            self.master.after(0, self.update_image, image)
 
     # The purpose of the step_prev function is to go back to the previous image
     def step_prev(self):
@@ -179,6 +189,9 @@ class ImageBabelGUI:
         color_depth_entry.grid(row=2, column=1)
 
         def confirm_settings():
+            self.stop_image_generation = True
+            if self.image_generation_thread is not None:
+                self.image_generation_thread.join()
             width = int(width_entry.get())
             height = int(height_entry.get())
             color_depth = int(color_depth_entry.get())
@@ -198,7 +211,7 @@ class ImageBabelGUI:
                 image = image.resize(
                     (int(width_entry.get()), int(height_entry.get())))  # Resize to specified resolution
                 image_id = self.generator.get_image_id(image)
-                self.generator.image_iterator = iter([self.generator._pixel_combination_to_image(image_id)])
+                self.generator.image_iterator = iter([self.generator.image_iterator._pixel_combination_to_image(image_id)])
                 self.generator.current_image = self.generator.generate_image()
                 self.update_image(self.generator.current_image)
                 self.slider.config(to=self.get_max_slider_value())
@@ -242,4 +255,4 @@ class ImageBabelGUI:
 
     def get_max_slider_value(self):
         # Ensure we have a valid integer value for the slider's maximum
-        return max(0, len(self.generator.image_iterator) - 1)
+        return max(0, self.generator.image_iterator.total_combinations - 1)
