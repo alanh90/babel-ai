@@ -16,6 +16,7 @@ class ImageBabelGUI:
 
         self.resampling_filter = Image.LANCZOS  # Default resampling filter
         self.randomness_threshold = 0.7  # Default randomness threshold
+        self.auto_increment = False  # Default auto-increment value
 
         # Create an instance of the ImageBabelGenerator with default values
         self.generator = ImageBabelGenerator(width=4, height=4, color_depth=2)
@@ -67,6 +68,9 @@ class ImageBabelGUI:
         generation_frame = tk.Frame(master)
         generation_frame.pack()
 
+        self.button_auto = tk.Button(generation_frame, text="Auto", command=self.toggle_auto)
+        self.button_auto.pack(side=tk.LEFT)
+
         self.button_find_nonrandom = tk.Button(generation_frame, text="Find Next Non-Random", command=self.find_next_nonrandom)
         self.button_find_nonrandom.pack(side=tk.LEFT)
 
@@ -116,21 +120,28 @@ class ImageBabelGUI:
 
     def update_image_from_slider(self, slider_value):
         image_index = int(float(slider_value) / self.slider["to"] * (self.generator.get_total_images() - 1))
+        self.generator.image_iterator.current_index = image_index
         image = self.generator.get_image_at_index(image_index)
         self.update_image(image)
         self.update_image_id(image_index)
 
-    def previous_image(self):
-        self.generator.previous_image()
-        self.update_image(self.generator.current_image)
-        self.update_slider()
-        self.update_image_id(self.generator.image_iterator.current_index)
-
     def next_image(self):
+        current_index = self.generator.image_iterator.current_index
+        self.generator.image_iterator.current_index = current_index + 1
         self.generator.generate_image()
         self.update_image(self.generator.current_image)
         self.update_slider()
         self.update_image_id(self.generator.image_iterator.current_index)
+
+    def previous_image(self):
+        current_index = self.generator.image_iterator.current_index
+        if current_index > 0:
+            self.generator.image_iterator.current_index = current_index - 1
+            pixel_combination = self.generator.image_iterator.get_pixel_combination(current_index - 1)
+            self.generator.current_image = self.generator.image_iterator._pixel_combination_to_image(pixel_combination)
+            self.update_image(self.generator.current_image)
+            self.update_slider()
+            self.update_image_id(self.generator.image_iterator.current_index)
 
     def fast_next(self):
         try:
@@ -140,8 +151,9 @@ class ImageBabelGUI:
             fast_next_steps = int(fast_next_steps)
             if fast_next_steps <= 0:
                 raise ValueError
-            for _ in range(fast_next_steps):
-                self.generator.generate_image()
+            current_index = self.generator.image_iterator.current_index
+            self.generator.image_iterator.current_index = current_index + fast_next_steps
+            self.generator.generate_image()
             self.update_image(self.generator.current_image)
             self.update_slider()
             self.update_image_id(self.generator.image_iterator.current_index)
@@ -157,6 +169,28 @@ class ImageBabelGUI:
             self.update_image_id(nonrandom_index)
         else:
             tk.messagebox.showinfo("No Non-Random Image", "No non-random image found.")
+
+    def toggle_auto(self):
+        self.auto_increment = not self.auto_increment
+        if self.auto_increment:
+            self.button_auto.config(text="Stop")
+            self.auto_generate()
+        else:
+            self.button_auto.config(text="Auto")
+
+    def auto_generate(self):
+        if self.auto_increment:
+            try:
+                current_index = self.generator.image_iterator.current_index
+                self.generator.image_iterator.current_index = current_index
+                self.generator.generate_image()
+                self.update_image(self.generator.current_image)
+                self.update_slider()
+                self.update_image_id(self.generator.image_iterator.current_index)
+                self.master.after(100, self.auto_generate)  # Adjust the delay as needed
+            except StopIteration:
+                self.auto_increment = False
+                self.button_auto.config(text="Auto")
 
     def new_settings(self):
         dialog = tk.Toplevel(self.master)
@@ -236,10 +270,10 @@ class ImageBabelGUI:
     def update_slider_to_index(self, index):
         self.slider.set(index)
 
-    def update_image_id(self, index):
-        image_id = self.generator.image_iterator.get_id_from_index(index)
+    def update_image_id(self, image_id):
         self.image_id_text.delete("1.0", tk.END)
         self.image_id_text.insert(tk.END, str(image_id))
+        self.generator.image_iterator.current_index = self.generator.image_iterator.get_index_from_id(image_id)
 
     def get_max_slider_value(self):
         # Ensure we have a valid integer value for the slider's maximum
