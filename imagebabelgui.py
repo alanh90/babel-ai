@@ -26,10 +26,6 @@ class ImageBabelGUI:
         self.canvas = tk.Canvas(master, width=400, height=400)
         self.canvas.pack()
 
-        self.slider = tk.Scale(master, from_=0, to=int(self.generator.get_total_images()) - 1, orient=tk.HORIZONTAL,
-                               command=self.update_image, length=400)
-        self.slider.pack(fill=tk.X, expand=True)
-
         # Navigation buttons
         navigation_frame = tk.Frame(master)
         navigation_frame.pack()
@@ -60,13 +56,6 @@ class ImageBabelGUI:
         options_frame = tk.Frame(master)
         options_frame.pack()
 
-        self.label_step_size = tk.Label(options_frame, text="Step Size:")
-        self.label_step_size.pack(side=tk.LEFT)
-        self.entry_step_size = tk.Entry(options_frame)
-        self.entry_step_size.insert(tk.END, "1")
-        self.entry_step_size.pack(side=tk.LEFT)
-        self.entry_step_size.bind("<Return>", self.update_step_size)
-
         self.label_threshold = tk.Label(options_frame, text="Randomness Threshold:")
         self.label_threshold.pack(side=tk.LEFT)
         self.entry_threshold = tk.Entry(options_frame)
@@ -77,64 +66,61 @@ class ImageBabelGUI:
         self.button_toggle_filter.pack(side=tk.LEFT)
 
         self.auto_increment = False
-        self.step_size = 1
         self.resampling_filter = Image.LANCZOS
 
         # Show the settings dialog on startup
         self.new_settings()
 
-    def update_image(self, index):
-        try:
-            image = self.generator.generate_image(index)
+    def update_image(self, image):
+        # Calculate the aspect ratio of the image
+        width, height = image.size
+        aspect_ratio = width / height
 
-            # Calculate the aspect ratio of the image
-            width, height = image.size
-            aspect_ratio = width / height
+        # Calculate the dimensions to fit the canvas while maintaining the aspect ratio
+        canvas_width = self.canvas.winfo_width()
+        canvas_height = self.canvas.winfo_height()
 
-            # Calculate the dimensions to fit the canvas while maintaining the aspect ratio
-            canvas_width = self.canvas.winfo_width()
-            canvas_height = self.canvas.winfo_height()
+        if aspect_ratio > 1:
+            # Image is wider than tall
+            scaled_width = canvas_width
+            scaled_height = int(scaled_width / aspect_ratio)
+        else:
+            # Image is taller than wide or square
+            scaled_height = canvas_height
+            scaled_width = int(scaled_height * aspect_ratio)
 
-            if aspect_ratio > 1:
-                # Image is wider than tall
-                scaled_width = canvas_width
-                scaled_height = int(scaled_width / aspect_ratio)
-            else:
-                # Image is taller than wide or square
-                scaled_height = canvas_height
-                scaled_width = int(scaled_height * aspect_ratio)
+        # Resize the image to fit the canvas using the selected resampling filter
+        image = image.resize((scaled_width, scaled_height), self.resampling_filter)
 
-            # Resize the image to fit the canvas using the selected resampling filter
-            image = image.resize((scaled_width, scaled_height), self.resampling_filter)
+        photo = ImageTk.PhotoImage(image)
+        self.canvas.delete("all")
+        self.canvas.create_image(canvas_width // 2, canvas_height // 2, anchor=tk.CENTER, image=photo)
+        self.canvas.image = photo
 
-            photo = ImageTk.PhotoImage(image)
-            self.canvas.delete("all")
-            self.canvas.create_image(canvas_width // 2, canvas_height // 2, anchor=tk.CENTER, image=photo)
-            self.canvas.image = photo
-        except ValueError as e:
-            print(f"Error: {str(e)}")
-
+    # The purpose of the step_prev function is to go back to the previous image
     def step_prev(self):
-        current_index = self.generator.current_index
-        new_index = str(int(current_index) - self.step_size).zfill(len(current_index))
-        if int(new_index) >= 0:
-            self.generator.current_index = new_index
-            self.update_image(new_index)
+        try:
+            self.generator.current_image = self.generator.generate_image()
+            self.update_image(self.generator.current_image)
+        except StopIteration:
+            pass
 
+    # The purpose of the step_next function is to go to the next image
     def step_next(self):
-        current_index = self.generator.current_index
-        new_index = str(int(current_index) + self.step_size).zfill(len(current_index))
-        if int(new_index) < int(self.generator.get_total_images()):
-            self.generator.current_index = new_index
-            self.update_image(new_index)
+        try:
+            self.generator.current_image = self.generator.generate_image()
+            self.update_image(self.generator.current_image)
+        except StopIteration:
+            pass
 
+    # This is meant to skip images
     def fast_forward(self):
-        current_index = self.generator.current_index
-        fast_forward_step = self.step_size * 100  # Adjust the factor as needed
-        new_index = str(int(current_index) + fast_forward_step).zfill(len(current_index))
-        if int(new_index) < int(self.generator.get_total_images()):
-            self.generator.current_index = new_index
-            self.update_image(new_index)
+        for _ in range(100):  # Adjust the number as needed
+            try:
+                self.generator.current_image = self.generator.generate_image()
+            except StopIteration:
+                break
+        self.update_image(self.generator.current_image)
 
     def toggle_auto(self):
         self.auto_increment = not self.auto_increment
@@ -144,10 +130,16 @@ class ImageBabelGUI:
         else:
             self.button_auto.config(text="Auto")
 
+    # This is supposed to automatically increment to the next image so you can actively see the image changing
     def auto_generate(self):
         if self.auto_increment:
-            self.step_next()
-            self.master.after(100, self.auto_generate)  # Adjust the delay as needed
+            try:
+                self.generator.current_image = self.generator.generate_image()
+                self.update_image(self.generator.current_image)
+                self.master.after(100, self.auto_generate)  # Adjust the delay as needed
+            except StopIteration:
+                self.auto_increment = False
+                self.button_auto.config(text="Auto")
 
     def new_settings(self):
         dialog = tk.Toplevel(self.master)
@@ -173,8 +165,9 @@ class ImageBabelGUI:
             height = int(height_entry.get())
             color_depth = int(color_depth_entry.get())
             self.generator.set_parameters(width, height, color_depth)
-            self.slider.config(to=int(self.generator.get_total_images()) - 1)
-            update_image_after_dialog(0)
+            self.generator.image_iterator = self.generator._generate_image_iterator()
+            self.generator.current_image = self.generator.generate_image()
+            self.update_image(self.generator.current_image)
             dialog.destroy()
 
         def import_image():
@@ -186,12 +179,10 @@ class ImageBabelGUI:
                 image = image.resize(
                     (int(width_entry.get()), int(height_entry.get())))  # Resize to specified resolution
                 image_id = self.generator.get_image_id(image)
-                self.generator.current_index = image_id
-                update_image_after_dialog(image_id)
+                self.generator.image_iterator = iter([self.generator._pixel_combination_to_image(image_id)])
+                self.generator.current_image = self.generator.generate_image()
+                self.update_image(self.generator.current_image)
                 dialog.destroy()
-
-        def update_image_after_dialog(index):
-            self.update_image(index)
 
         confirm_button = tk.Button(dialog, text="Confirm", command=confirm_settings)
         confirm_button.grid(row=3, column=0)
@@ -212,23 +203,16 @@ class ImageBabelGUI:
         else:
             self.resampling_filter = Image.LANCZOS
             self.button_toggle_filter.config(text="Filter: Lanczos")
-        self.update_image(self.generator.current_index)
-
-    def update_step_size(self, event):
-        try:
-            self.step_size = int(self.entry_step_size.get())
-        except ValueError:
-            pass
+        self.update_image(self.generator.current_image)
 
     def save_image(self):
         file_path = filedialog.asksaveasfilename(defaultextension=".png")
         if file_path:
-            image = self.generator.generate_image(self.generator.current_index)
-            image.save(file_path)
+            self.generator.current_image.save(file_path)
 
     def skip_to_nonrandom(self):
         threshold = float(self.entry_threshold.get())
         image = self.generator.find_next_nonrandom_image(threshold)
         if image is not None:
-            self.generator.current_index = self.generator.get_image_id(image)
-            self.update_image(self.generator.current_index)
+            self.generator.current_image = image
+            self.update_image(self.generator.current_image)
