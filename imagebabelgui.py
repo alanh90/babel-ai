@@ -26,6 +26,11 @@ class ImageBabelGUI:
         self.canvas = tk.Canvas(master, width=400, height=400)
         self.canvas.pack()
 
+        # Slider initialization with dynamic maximum value
+        self.slider = tk.Scale(self.master, from_=0, to=self.get_max_slider_value(), orient=tk.HORIZONTAL,
+                               command=self.update_image_from_slider)
+        self.slider.pack(fill=tk.X, expand=True)
+
         # Navigation buttons
         navigation_frame = tk.Frame(master)
         navigation_frame.pack()
@@ -97,11 +102,21 @@ class ImageBabelGUI:
         self.canvas.create_image(canvas_width // 2, canvas_height // 2, anchor=tk.CENTER, image=photo)
         self.canvas.image = photo
 
+    def update_image_from_slider(self, slider_value):
+        slider_position = int(slider_value)
+        total_images = self.get_max_slider_value() + 1
+        image_index = int(slider_position / total_images * self.generator.image_iterator.total_combinations)
+        pixel_combination = self.generator.image_iterator.get_pixel_combination(image_index)
+        image = self.generator.image_iterator._pixel_combination_to_image(pixel_combination)
+        self.generator.current_image = image
+        self.update_image(image)
+
     # The purpose of the step_prev function is to go back to the previous image
     def step_prev(self):
         try:
             self.generator.current_image = self.generator.generate_image()
             self.update_image(self.generator.current_image)
+            self.slider.set(self.generator.image_iterator.current_index)
         except StopIteration:
             pass
 
@@ -110,6 +125,7 @@ class ImageBabelGUI:
         try:
             self.generator.current_image = self.generator.generate_image()
             self.update_image(self.generator.current_image)
+            self.slider.set(self.generator.image_iterator.current_index)
         except StopIteration:
             pass
 
@@ -121,6 +137,7 @@ class ImageBabelGUI:
             except StopIteration:
                 break
         self.update_image(self.generator.current_image)
+        self.slider.set(self.generator.image_iterator.current_index)
 
     def toggle_auto(self):
         self.auto_increment = not self.auto_increment
@@ -136,6 +153,7 @@ class ImageBabelGUI:
             try:
                 self.generator.current_image = self.generator.generate_image()
                 self.update_image(self.generator.current_image)
+                self.slider.set(self.generator.image_iterator.current_index)
                 self.master.after(100, self.auto_generate)  # Adjust the delay as needed
             except StopIteration:
                 self.auto_increment = False
@@ -168,6 +186,7 @@ class ImageBabelGUI:
             self.generator.image_iterator = self.generator._generate_image_iterator()
             self.generator.current_image = self.generator.generate_image()
             self.update_image(self.generator.current_image)
+            self.slider.config(to=self.get_max_slider_value())
             dialog.destroy()
 
         def import_image():
@@ -182,6 +201,7 @@ class ImageBabelGUI:
                 self.generator.image_iterator = iter([self.generator._pixel_combination_to_image(image_id)])
                 self.generator.current_image = self.generator.generate_image()
                 self.update_image(self.generator.current_image)
+                self.slider.config(to=self.get_max_slider_value())
                 dialog.destroy()
 
         confirm_button = tk.Button(dialog, text="Confirm", command=confirm_settings)
@@ -212,7 +232,14 @@ class ImageBabelGUI:
 
     def skip_to_nonrandom(self):
         threshold = float(self.entry_threshold.get())
-        image = self.generator.find_next_nonrandom_image(threshold)
-        if image is not None:
+        image_index = self.generator.image_iterator.find_next_nonrandom_index(threshold)
+        if image_index is not None:
+            pixel_combination = self.generator.image_iterator.get_pixel_combination(image_index)
+            image = self.generator.image_iterator._pixel_combination_to_image(pixel_combination)
             self.generator.current_image = image
-            self.update_image(self.generator.current_image)
+            self.update_image(image)
+            self.slider.set(image_index)
+
+    def get_max_slider_value(self):
+        # Ensure we have a valid integer value for the slider's maximum
+        return max(0, len(self.generator.image_iterator) - 1)

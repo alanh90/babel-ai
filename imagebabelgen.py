@@ -2,46 +2,93 @@ from PIL import Image
 import numpy as np
 import itertools
 
+class ImageIterator:
+    def __init__(self, width, height, color_depth):
+        self.width = width
+        self.height = height
+        self.color_depth = color_depth
+        self.total_combinations = color_depth ** (width * height)
+        self.current_index = 0
+        self.pixel_combination_generator = self._generate_pixel_combinations()
+
+    def _generate_pixel_combinations(self):
+        pixel_values = range(self.color_depth)
+        return itertools.product(pixel_values, repeat=self.width * self.height)
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        if self.current_index >= self.total_combinations:
+            raise StopIteration
+        try:
+            pixel_combination = next(self.pixel_combination_generator)
+        except StopIteration:
+            self.pixel_combination_generator = self._generate_pixel_combinations()
+            pixel_combination = next(self.pixel_combination_generator)
+        self.current_index += 1
+        return pixel_combination
+
+    def __len__(self):
+        return self.total_combinations
+
+    def get_pixel_combination(self, index):
+        if index >= self.total_combinations:
+            raise IndexError("Index out of range")
+        pixel_combination_generator = self._generate_pixel_combinations()
+        for _ in range(index):
+            next(pixel_combination_generator)
+        return next(pixel_combination_generator)
+
+    def is_random_image(self, index, entropy_threshold=5.0):
+        image = self._pixel_combination_to_image(self.get_pixel_combination(index))
+        entropy = self._calculate_entropy(image)
+        return entropy >= entropy_threshold
+
+    def _pixel_combination_to_image(self, pixel_combination):
+        image_data = [pixel_value for pixel_value in pixel_combination]
+        image_data = [int(value / (self.color_depth - 1) * 255) for value in image_data]
+        image_data = bytearray(image_data)
+        return Image.frombytes('L', (self.width, self.height), bytes(image_data))
+
+    def _calculate_entropy(self, image):
+        pixels = np.array(image)
+        _, counts = np.unique(pixels, return_counts=True)
+        probabilities = counts / counts.sum()
+        entropy = -np.sum(probabilities * np.log2(probabilities))
+        return entropy
+
+    def find_next_nonrandom_index(self, entropy_threshold=5.0):
+        for i in range(self.current_index, len(self.pixel_combinations)):
+            if not self.is_random_image(i, entropy_threshold):
+                return i
+        return None
+
 class ImageBabelGenerator:
     def __init__(self, width, height, color_depth):
         self.width = width
         self.height = height
         self.color_depth = color_depth
-        self.total_images = color_depth ** (width * height)
         self.image_iterator = self._generate_image_iterator()
         self.current_image = None
-        self.current_array = None
 
     def _generate_image_iterator(self):
-        pixel_values = range(self.color_depth)
-        pixel_combinations = itertools.product(pixel_values, repeat=self.width * self.height)
-        return (self._pixel_combination_to_array(combination) for combination in pixel_combinations)
-
-    def _pixel_combination_to_array(self, pixel_combination):
-        image_array = np.array(pixel_combination, dtype=np.uint8).reshape(self.height, self.width)
-        return image_array
-
-    def _array_to_image(self, image_array):
-        image_data = image_array.flatten()
-        image_data = [int(value / (self.color_depth - 1) * 255) for value in image_data]
-        image_data = bytearray(image_data)
-        return Image.frombytes('L', (self.width, self.height), bytes(image_data))
+        return ImageIterator(self.width, self.height, self.color_depth)
 
     def generate_image(self):
         try:
-            self.current_array = next(self.image_iterator)
-            self.current_image = self._array_to_image(self.current_array)
+            pixel_combination = next(self.image_iterator)
+            self.current_image = self.image_iterator._pixel_combination_to_image(pixel_combination)
         except StopIteration:
             self.current_image = None
-            self.current_array = None
         return self.current_image
 
     def get_total_images(self):
-        return self.total_images
+        return self.color_depth ** (self.width * self.height)
 
     def get_image_id(self, image):
-        pixels = np.array(image.getdata(), dtype=np.uint8)
-        pixel_values = (pixels / 255 * (self.color_depth - 1)).astype(np.uint8)
+        pixels = list(image.getdata())
+        pixel_values = [int(value / 255 * (self.color_depth - 1)) for value in pixels]
         return tuple(pixel_values)
 
     def set_parameters(self, width=None, height=None, color_depth=None):
@@ -51,5 +98,4 @@ class ImageBabelGenerator:
             self.height = height
         if color_depth is not None:
             self.color_depth = color_depth
-        self.total_images = self.color_depth ** (self.width * self.height)
         self.image_iterator = self._generate_image_iterator()
