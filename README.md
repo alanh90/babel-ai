@@ -15,7 +15,7 @@ Babel AI is a Python-based project that delves into the fascinating realm of gen
 - Save generated images to the user's computer or copy them to the clipboard for easy sharing.
 - Customize the image resampling filter for enhanced visual quality.
 - View the current image ID and position within the library of all possible images.
-- 
+
 ## Installation
 
 ### Prerequisites
