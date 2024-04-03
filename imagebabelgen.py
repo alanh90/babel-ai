@@ -2,6 +2,7 @@ from PIL import Image
 import numpy as np
 import itertools
 
+
 class ImageIterator:
     def __init__(self, width, height, color_depth):
         self.width = width
@@ -59,10 +60,17 @@ class ImageIterator:
         return entropy
 
     def find_next_nonrandom_index(self, entropy_threshold=5.0):
-        for i in range(self.current_index, len(self.pixel_combinations)):
+        for i in range(self.current_index, self.total_combinations):
             if not self.is_random_image(i, entropy_threshold):
                 return i
         return None
+
+    def get_index_from_id(self, image_id):
+        return image_id
+
+    def get_id_from_index(self, index):
+        return index
+
 
 class ImageBabelGenerator:
     def __init__(self, width, height, color_depth):
@@ -83,6 +91,13 @@ class ImageBabelGenerator:
             self.current_image = None
         return self.current_image
 
+    def previous_image(self):
+        if self.image_iterator.current_index > 0:
+            self.image_iterator.current_index -= 1
+            pixel_combination = self.image_iterator.get_pixel_combination(self.image_iterator.current_index)
+            self.current_image = self.image_iterator._pixel_combination_to_image(pixel_combination)
+        return self.current_image
+
     def get_total_images(self):
         return self.color_depth ** (self.width * self.height)
 
@@ -90,6 +105,10 @@ class ImageBabelGenerator:
         pixels = list(image.getdata())
         pixel_values = [int(value / 255 * (self.color_depth - 1)) for value in pixels]
         return tuple(pixel_values)
+
+    def get_image_at_index(self, index):
+        pixel_combination = self.image_iterator.get_pixel_combination(index)
+        return self.image_iterator._pixel_combination_to_image(pixel_combination)
 
     def set_parameters(self, width=None, height=None, color_depth=None):
         if width is not None:
