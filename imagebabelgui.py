@@ -14,6 +14,7 @@ class ImageBabelGUI:
         self.master = master
         master.title("Image Babel Generator")
 
+        self.resampling_filter = Image.LANCZOS  # Default resampling filter
         self.randomness_threshold = 0.7  # Default randomness threshold
 
         # Create an instance of the ImageBabelGenerator with default values
@@ -24,7 +25,14 @@ class ImageBabelGUI:
         self.file_menu = tk.Menu(self.menu_bar, tearoff=0)
         self.file_menu.add_command(label="New", command=self.new_settings)
         self.menu_bar.add_cascade(label="File", menu=self.file_menu)
+
         master.config(menu=self.menu_bar)
+
+        # Filter selection dropdown
+        self.filter_var = tk.StringVar(value="Lanczos")
+        self.filter_dropdown = tk.OptionMenu(master, self.filter_var, "Nearest", "Bilinear", "Bicubic", "Lanczos",
+                                             command=self.change_filter)
+        self.filter_dropdown.pack()
 
         # Create GUI elements
         self.canvas = tk.Canvas(master, width=400, height=400, bg="white")
@@ -96,8 +104,8 @@ class ImageBabelGUI:
             scaled_height = canvas_height
             scaled_width = int(scaled_height * aspect_ratio)
 
-        # Resize the image to fit the canvas
-        image = image.resize((scaled_width, scaled_height), Image.LANCZOS)
+        # Resize the image to fit the canvas using the selected resampling filter
+        image = image.resize((scaled_width, scaled_height), self.resampling_filter)
 
         image = image.convert("RGB")  # Convert the image to RGB mode
 
@@ -236,3 +244,14 @@ class ImageBabelGUI:
     def get_max_slider_value(self):
         # Ensure we have a valid integer value for the slider's maximum
         return max(0, self.generator.get_total_images() - 1)
+
+    def change_filter(self, selected_filter):
+        filters = {
+            "Nearest": Image.NEAREST,
+            "Bilinear": Image.BILINEAR,
+            "Bicubic": Image.BICUBIC,
+            "Lanczos": Image.LANCZOS
+        }
+
+        self.resampling_filter = filters[selected_filter]
+        self.update_image(self.generator.current_image)
