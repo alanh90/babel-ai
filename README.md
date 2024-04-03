@@ -6,6 +6,9 @@ Babel AI is a Python-based project that delves into the fascinating realm of gen
 
 ![Babel Demo](images/screencapture.gif)
 
+## Why call it Babel?
+The Library of Babel is a famous short story by Jorge Luis Borges, published in 1941. It describes a universe in the form of a vast library containing all possible 410-page books that can be composed using a set of just a few characters (25 symbols: 22 letters, the period, the comma, and the space).
+
 ## Features
 - Generate a myriad of images based on user-defined parameters like pixel size and color depth.
 - Effortlessly navigate through the generated images using an intuitive slider and navigation buttons.
