@@ -1,4 +1,4 @@
-# Babel AI - All Possible Image Generation and Analysis
+# Babel AI - All Possible Image Generation and Analysis (WIP)
 ![Babel Cover](images/babel_cover.png)
 
 ## Introduction
